@@ -1,0 +1,112 @@
+name: Validar Quiz IoC, DIP e DI (Primeira Alternativa Correta)
+
+on:
+  workflow_dispatch:
+    inputs:
+      content_node_id:
+        description: 'The content node ID (Issue ID)'
+        required: true
+        type: string
+      project_id:
+        description: 'The project ID'
+        required: true
+        type: string
+      other_project_data:
+        description: 'The full json payload of the github project event'
+        required: false
+        type: string
+
+permissions: write-all
+
+
+jobs:
+  move_issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move issue 6 to Done Column (GraphQL)
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ github.event.inputs.installation_token }} # Use the token from input
+          script: |
+            try {
+              const projectId = "${{ github.event.inputs.project_id }}";
+              const issueNumber = 6;
+              console.log(`Moving issue #${issueNumber} to Done in project: ${projectId}`);
+              const projectItemsQuery = `
+                query {
+                  node(id: "${projectId}") {
+                    ... on ProjectV2 {
+                      items(first: 100) {
+                        nodes {
+                          id
+                          content {
+                            ... on Issue {
+                              number
+                            }
+                          }
+                        }
+                      }
+                    }
+                    fields(first: 100) {
+                      nodes {
+                        id
+                        name
+                        ... on ProjectV2ItemFieldSingleSelect {
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const projectItemsResult = await github.graphql(projectItemsQuery);
+              const projectItems = projectItemsResult.node.items.nodes;
+              console.log(`[DEBUG] projectItems: ${JSON.stringify(projectItems)}`);
+              const item = projectItems.find(i => i.content?.number === issueNumber);
+
+              if (!item) {
+                core.setFailed(`Issue ${issueNumber} not found in project.`);
+                return;
+              }
+
+              console.log(`[DEBUG] item.id: ${item.id}`);
+
+              const doneColumn = projectItemsResult.node.fields.nodes.find(field => field.__typename === "ProjectV2ItemFieldSingleSelect" && field.name === "Done");
+
+              if (!doneColumn) {
+                core.setFailed("Done column not found in project.");
+                return;
+              }
+
+              const doneOption = doneColumn.options.find(option => option.name === "Done");
+
+              if (!doneOption) {
+                core.setFailed("Done option not found in Done column.");
+                return;
+              }
+
+              const moveIssueMutation = `
+                mutation {
+                  updateProjectV2ItemPosition(input: {
+                    projectId: "${projectId}",
+                    itemId: "${item.id}",
+                    afterId: null,
+                    fieldValueId: "${doneOption.id}"
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `;
+
+              const moveResult = await github.graphql(moveIssueMutation);
+              console.log(`[DEBUG] Move Issue Result: ${JSON.stringify(moveResult)}`);
+            } catch (error) {
+              core.setFailed(error.message);
+              console.error(error);
+            }
