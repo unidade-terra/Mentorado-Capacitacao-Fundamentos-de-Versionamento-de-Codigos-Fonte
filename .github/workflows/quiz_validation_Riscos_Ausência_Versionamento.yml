@@ -45,10 +45,11 @@ jobs:
             if (!issueBody) return;
 
             const respostasCorretas = {
-              "1": "Uma disciplina.",
-              "2": "Sim.",
-              "3": "Um padrão de design que permite injetar dependências, proporcionando baixo acoplamento.",
-              "4": "IoC determina como as dependências devem ser resolvidas em uma aplicação, enquanto DIP refere-se ao processo de delegar o controle de criação de objetos a um mecanismo externo."
+              "1": "Fica difícil encontrar e corrigir os erros, atrasando o trabalho.",
+              "2": "A origem dos erros é difícil de encontrar, atrasando o trabalho.",
+              "3": "Não, sem um sistema de versionamento, a recuperação de versões anteriores do programa é altamente improvável e não confiável.",
+              "4": "Dificulta a colaboração, pois as alterações de múltiplos desenvolvedores podem se sobrepor e causar problemas.",
+              "5": "Fica mais difícil e demorado criar novas versões do programa."
             };
 
             const respostasUsuario = {};
