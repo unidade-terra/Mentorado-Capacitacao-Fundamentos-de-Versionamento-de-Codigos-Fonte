@@ -3,8 +3,9 @@ on:
   push:
     paths:
       - '.github/workflows/quiz_validation.yml'
-      
-permissions: write-all
+
+permissions:
+  write-all # Still recommend narrowing this down
 
 jobs:
   validar_quiz:
