@@ -30,7 +30,7 @@ jobs:
 
             if (!issue) {
               console.log(`Issue "${issueTitulo}" não encontrada.`);
-              return;
+              return null; // Return null if no issue found
             }
 
             return issue.body;
@@ -65,27 +65,41 @@ jobs:
               });
             });
 
-            let feedback = "## Resultado do Quiz\n\n";
+            let feedback = "## Resultado do Quiz (triggered on push - potential issue target)\n\n";
             let todasCorretas = true;
 
-            for (const numeroPergunta in respostasCorretas) {
-              if (respostasUsuario[numeroPergunta] === respostasCorretas[numeroPergunta]) {
-                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
-              } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
-                todasCorretas = false;
-              }
-            }
-
-            if (todasCorretas) {
-              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
-            } else {
-              feedback += "\nPor favor, revise suas respostas e tente novamente.";
-            }
-
-            await github.rest.issues.createComment({
+            const issuesList = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: feedback,
+              state: 'all',
             });
+
+            const targetIssue = issuesList.data.find(i => i.title === "Desafio quiz: Riscos da Ausência de Versionamento");
+
+            if (targetIssue) {
+              for (const numeroPergunta in respostasCorretas) {
+                if (respostasUsuario[numeroPergunta] === respostasCorretas[numeroPergunta]) {
+                  feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+                } else {
+                  feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                  todasCorretas = false;
+                }
+              }
+
+              if (todasCorretas) {
+                feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+              } else {
+                feedback += "\nPor favor, revise suas respostas e tente novamente.";
+              }
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: targetIssue.number,
+                body: feedback,
+              });
+            } else {
+              console.log(`Não foi possível encontrar a issue "${issueTitulo}" para comentar.`);
+            }
+
+            return feedback; # Optionally return feedback
