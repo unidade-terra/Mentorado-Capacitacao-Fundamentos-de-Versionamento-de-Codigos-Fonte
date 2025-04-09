@@ -2,7 +2,7 @@ name: Validar Quiz Riscos da Ausência de Versionamento
 on:  
   push:
     paths:
-      - '.github/workflows/quiz_validation.yml'
+      - '.github/workflows/quiz_validation_Riscos_Ausência_Versionamento.yml'
 
 permissions:
   write-all # Still recommend narrowing this down
