@@ -16,7 +16,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueName = "Desafio quiz: IoC, DIP e DI";
+            const issueName = "Desafio quiz: Riscos da Ausência de Versionamento";
             console.log(`[DEBUG] Issue Name: ${issueName}`);
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
