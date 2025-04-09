@@ -14,7 +14,7 @@ on:
         description: 'The full json payload of the github project event'
         required: false
         type: string
-    push:
+  push:
     paths:
       - '.github/workflows/quiz_validation.yml'
       
