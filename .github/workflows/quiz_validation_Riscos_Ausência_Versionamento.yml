@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3 # Using the latest version
 
       - name: Obter conteúdo da issue
         id: obter_issue
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7 # Using the latest version
         with:
           script: |
             const issueTitulo = "Desafio quiz: IoC, DIP e DI";
@@ -37,7 +37,7 @@ jobs:
 
       - name: Validar respostas do quiz
         id: validar_respostas
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7 # Using the latest version
         with:
           script: |
             const issueBody = ${{ steps.obter_issue.outputs.result }};
@@ -48,7 +48,7 @@ jobs:
               "2": "Sim.",
               "3": "Um padrão de design que permite injetar dependências, proporcionando baixo acoplamento.",
               "4": "IoC estabelece que as abstrações não devem depender de implementações concretas, enquanto DIP define que os módulos de alto nível não devem depender dos módulos de baixo nível."
-            };
+            }; // Removed the semicolon here
 
             const respostasUsuario = {};
             const perguntas = issueBody.split("# ");
