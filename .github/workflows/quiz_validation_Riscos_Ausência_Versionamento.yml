@@ -19,7 +19,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueTitulo = "Desafio quiz: Riscos da Ausência de Versionamento";
+            const issueTitulo = "Desafio quiz: IoC, DIP e DI";
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -30,9 +30,10 @@ jobs:
 
             if (!issue) {
               console.log(`Issue "${issueTitulo}" não encontrada.`);
-              return null; // Return null if no issue found
+              return;
             }
 
+            core.setOutput('issueNumber', issue.number);
             return issue.body;
 
       - name: Validar respostas do quiz
@@ -44,11 +45,10 @@ jobs:
             if (!issueBody) return;
 
             const respostasCorretas = {
-              "1": "Fica difícil encontrar e corrigir os erros, atrasando o trabalho.",
-              "2": "A origem dos erros é difícil de encontrar, atrasando o trabalho.",
-              "3": "Não, sem um sistema de versionamento, a recuperação de versões anteriores do programa é altamente improvável e não confiável.",
-              "4": "Dificulta a colaboração, pois as alterações de múltiplos desenvolvedores podem se sobrepor e causar problemas.",
-              "5": "Fica mais difícil e demorado criar novas versões do programa."
+              "1": "Uma disciplina.",
+              "2": "Sim.",
+              "3": "Um padrão de design que permite injetar dependências, proporcionando baixo acoplamento.",
+              "4": "*IoC* determina como as dependências devem ser resolvidas em uma aplicação, enquanto *DIP* refere-se ao processo de delegar o controle de criação de objetos a um mecanismo externo."
             };
 
             const respostasUsuario = {};
@@ -65,41 +65,30 @@ jobs:
               });
             });
 
-            let feedback = "## Resultado do Quiz (triggered on push - potential issue target)\n\n";
+            let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
 
-            const issuesList = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'all',
-            });
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = respostasCorretas[numeroPergunta].trim();
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? respostasUsuario[numeroPergunta].trim() : "";
 
-            const targetIssue = issuesList.data.find(i => i.title === "Desafio quiz: Riscos da Ausência de Versionamento");
-
-            if (targetIssue) {
-              for (const numeroPergunta in respostasCorretas) {
-                if (respostasUsuario[numeroPergunta] === respostasCorretas[numeroPergunta]) {
-                  feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
-                } else {
-                  feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
-                  todasCorretas = false;
-                }
-              }
-
-              if (todasCorretas) {
-                feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += "\nPor favor, revise suas respostas e tente novamente.";
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostaCorreta}\n`;
+                todasCorretas = false;
               }
-
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: targetIssue.number,
-                body: feedback,
-              });
-            } else {
-              console.log(`Não foi possível encontrar a issue "${issueTitulo}" para comentar.`);
             }
 
-            return feedback; # Optionally return feedback
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
