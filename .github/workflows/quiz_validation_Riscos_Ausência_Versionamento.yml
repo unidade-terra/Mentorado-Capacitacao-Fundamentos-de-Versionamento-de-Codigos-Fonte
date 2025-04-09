@@ -8,30 +8,9 @@ permissions:
   write-all # Still recommend narrowing this down
 
 jobs:
-  validar_quiz_e_mover:
+  validar_quiz:
     runs-on: ubuntu-latest
     steps:
-      - name: Buscar Issue pelo Nome
-        id: buscar_issue
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const issueName = "Desafio quiz: Riscos da Ausência de Versionamento";
-            console.log(`[DEBUG] Issue Name: ${issueName}`);
-            const issues = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: "all",
-            });
-            const issue = issues.data.find(issue => issue.title === issueName);
-
-            if (!issue) {
-              core.setFailed(`Issue com o nome "${issueName}" não encontrado.`);
-              return null;
-            }
-
-            return issue.number;
-
       - name: Checkout do código
         uses: actions/checkout@v2
 
@@ -40,40 +19,36 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueNumber = ${{ steps.buscar_issue.outputs.result }};
-            if (!issueNumber) return;
-            try {
-              const issueBody = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issueNumber,
-              }).then(result => result.data.body);
+            const issueTitulo = "Desafio quiz: IoC, DIP e DI";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
 
-              if (!issueBody) {
-                console.log(`Issue number ${issueNumber} body not found.`);
-                return;
-              }
+            const issue = issues.data.find(i => i.title === issueTitulo);
 
-              return issueBody;
-            } catch (error) {
-              core.setFailed(`Failed to retrieve issue body: ${error.message}`);
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
               return;
             }
 
-      - name: Validar respostas do quiz e mover card
-        id: validar_respostas_e_mover
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+
+      - name: Validar respostas do quiz (com logs)
+        id: validar_respostas
         uses: actions/github-script@v6
         with:
           script: |
             const issueBody = ${{ steps.obter_issue.outputs.result }};
-            const issueNumber = ${{ steps.buscar_issue.outputs.result }};
-            const projectId = "${{ github.event.inputs.project_id }}";
-            if (!issueBody || !issueNumber) return;
+            if (!issueBody) return;
+
             const respostasCorretas = {
               "1": "Uma disciplina.",
               "2": "Sim.",
               "3": "Um padrão de design que permite injetar dependências, proporcionando baixo acoplamento.",
-              "4": "IoC estabelece que as abstrações não devem depender de implementações concretas, enquanto DIP define que os módulos de alto nível não devem depender dos módulos de baixo nível."
+              "4": "IoC determina como as dependências devem ser resolvidas em uma aplicação, enquanto DIP refere-se ao processo de delegar o controle de criação de objetos a um mecanismo externo."
             };
 
             const respostasUsuario = {};
@@ -90,55 +65,40 @@ jobs:
               });
             });
 
+            let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
 
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
+            }
+
             for (const numeroPergunta in respostasCorretas) {
-              if (respostasUsuario[numeroPergunta] !== respostasCorretas[numeroPergunta]) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+
+              if (numeroPergunta === "4") { // Log apenas para a pergunta 4
+                console.log(`Pergunta ${numeroPergunta}:`);
+                console.log(`  Resposta Correta (Sanitizada): "${respostaCorreta}"`);
+                console.log(`  Resposta Usuário (Sanitizada): "${respostaUsuario}"`);
+              }
+
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
                 todasCorretas = false;
-                break;
               }
             }
 
             if (todasCorretas) {
-              try {
-                const projectColumns = await github.rest.projects.listColumns({
-                  project_id: projectId,
-                });
-
-                console.log(`[DEBUG] Project Columns: ${JSON.stringify(projectColumns.data)}`);
-
-                if (projectColumns && projectColumns.data && projectColumns.data.length > 1) {
-                  const reviewColumn = projectColumns.data[1];
-                  const doneColumn = projectColumns.data.find(column => column.name === "${{ github.event.inputs.done_column_name }}");
-
-                  console.log(`[DEBUG] Review Column: ${JSON.stringify(reviewColumn)}`);
-                  console.log(`[DEBUG] Done Column: ${JSON.stringify(doneColumn)}`);
-
-                  if (reviewColumn && doneColumn) {
-                    const doneColumnId = doneColumn.id;
-                    const issueId = (await github.rest.issues.get({owner: context.repo.owner, repo: context.repo.repo, issue_number: issueNumber})).data.node_id;
-
-                    const moveProjectItemMutation = `
-                      mutation {
-                        moveProjectItem(input: {
-                          itemId: "${issueId}",
-                          columnId: "${doneColumnId}"
-                        }) {
-                          projectItem {
-                            id
-                          }
-                        }
-                      }
-                    `;
-                    const result = await github.graphql(moveProjectItemMutation);
-                    console.log(`[DEBUG] GraphQL Result: ${JSON.stringify(result)}`);
-                  } else {
-                    console.log("Coluna 'Review' ou 'Done' não encontrada.");
-                  }
-                } else {
-                  console.log("Não foram encontradas colunas suficientes no projeto.");
-                }
-              } catch (error) {
-                core.setFailed(`Failed to move card: ${error.message}`);
-              }
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
             }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
