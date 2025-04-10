@@ -5,7 +5,7 @@ on:
       - '.github/workflows/quiz_validation_Riscos_Ausência_Versionamento.yml'
   
 permissions:
-  write-all # Still recommend narrowing this down
+  write-all
 
 jobs:
   validar_quiz:
