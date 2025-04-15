@@ -1,1 +1,11 @@
-Crie a sua receita aqui. Bom desafio!
+**Aviso: Todos os ingredientes e o modo de preparo apresentados abaixo são apenas exemplos para este desafio. Sinta-se à vontade para usar a sua própria receita secreta! Note que esta é uma versão incompleta, com ingredientes e passos faltando, que você deverá adicionar nas etapas seguintes do desafio.**
+
+Ingredientes (Exemplo Inicial):
+2 xícaras de farinha de trigo
+1 xícara de açúcar
+3 ovos
+... (outros ingredientes serão adicionados)
+
+Modo de Preparo (Exemplo Inicial):
+1. Misture a farinha e o açúcar em uma tigela.
+... (outros passos serão adicionados)
