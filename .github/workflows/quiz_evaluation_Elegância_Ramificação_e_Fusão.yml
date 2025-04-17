@@ -1,6 +1,6 @@
 name: Avaliar Quiz A Elegância da Ramificação e a Arte da Fusão
 on:
-  push:
+  push: 
     paths: 
       - '.github/workflows/quiz_evaluation_Elegância_Ramificação_e_Fusão.yml'
 
