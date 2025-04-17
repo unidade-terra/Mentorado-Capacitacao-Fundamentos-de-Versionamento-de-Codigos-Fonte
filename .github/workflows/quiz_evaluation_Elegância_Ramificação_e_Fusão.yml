@@ -19,7 +19,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueTitulo = "Desafio quiz: Desvendando a Elegância da Ramificação e a Arte da Fusão";
+            const issueTitulo = "Desafio Quiz: Desvendando a Elegância da Ramificação e a Arte da Fusão";
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
