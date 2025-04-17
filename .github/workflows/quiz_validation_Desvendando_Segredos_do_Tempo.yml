@@ -1,0 +1,102 @@
+name: Validar Quiz Conceitos Universais do Versionamento
+on:
+  push:
+    paths:
+      - '.github/workflows/quiz_validation_Conceitos_Universais_Versionamento.yml'
+
+permissions:
+  write-all
+
+jobs:
+  validar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueTitulo = "Desafio quiz: Desvendando os Segredos do Tempo - Conceitos Universais do Versionamento";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+
+            const issue = issues.data.find(i => i.title === issueTitulo);
+
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
+
+            const respostasCorretas = {
+              "1": "O local centralizado para armazenar e gerenciar todas as versões do projeto e seu histórico.",
+              "2": "Representar um estado específico do projeto em um determinado ponto no tempo (um \"snapshot\").",
+              "3": "Entregas.",
+              "4": "Permitir trabalhar em linhas de desenvolvimento paralelas para experimentação e trabalho em equipe sem afetar a linha principal.",
+              "5": "Uma biblioteca central onde todos os livros (versões) são guardados e catalogados.",
+              "6": "As diferentes edições de um livro ao longo dos anos, cada uma refletindo o estado do conteúdo em um dado momento.",
+              "7": "O \"porquê\" por trás das mudanças realizadas, contextualizando o progresso e fornecendo o contexto necessário para entender a linha de raciocínio que levou o projeto ao seu estado atual.",
+              "8": "Ramos (Branches) isolados para cada funcionalidade."
+            };
+
+            const respostasUsuario = {};
+            const perguntas = issueBody.split("# ");
+
+            perguntas.slice(1).forEach(pergunta => {
+              const numeroPergunta = pergunta.split(" - ")[0];
+              const opcoes = pergunta.split("- [");
+
+              opcoes.slice(1).forEach(opcao => {
+                if (opcao.startsWith("x")) {
+                  respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+                }
+              });
+            });
+
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
+            }
+
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                todasCorretas = false;
+              }
+            }
+
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
