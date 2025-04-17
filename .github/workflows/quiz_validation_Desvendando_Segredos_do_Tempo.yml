@@ -19,7 +19,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueTitulo = "Desafio quiz: desvendando os Segredos do Tempo";
+            const issueTitulo = "Desafio quiz: Desvendando os Segredos do Tempo";
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
