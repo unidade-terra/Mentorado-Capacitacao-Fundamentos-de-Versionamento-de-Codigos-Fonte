@@ -51,7 +51,7 @@ jobs:
               "4": "Permitir trabalhar em linhas de desenvolvimento paralelas para experimentação e trabalho em equipe sem afetar a linha principal.",
               "5": "Uma biblioteca central onde todos os livros (versões) são guardados e catalogados.",
               "6": "As diferentes edições de um livro ao longo dos anos, cada uma refletindo o estado do conteúdo em um dado momento.",
-              "7": "O "porquê" por trás das mudanças realizadas, contextualizando o progresso e fornecendo o contexto necessário para entender a linha de raciocínio que levou o projeto ao seu estado atual.",
+              "7": "O motivo por trás das mudanças realizadas, contextualizando o progresso e fornecendo o contexto necessário para entender a linha de raciocínio que levou o projeto ao seu estado atual.",
               "8": "Ramos (Branches) isolados para cada funcionalidade."
             };
 
