@@ -6,7 +6,7 @@ on:
 
 permissions:
   write-all
-
+ 
 jobs:
   validar_quiz:
     runs-on: ubuntu-latest
