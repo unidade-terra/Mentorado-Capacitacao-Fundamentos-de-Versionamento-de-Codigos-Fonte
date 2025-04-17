@@ -1,6 +1,6 @@
 name: Validar Quiz Conceitos Universais do Versionamento
 on:
-  push:
+  push: 
     paths:
       - '.github/workflows/quiz_validation_Desvendando_Segredos_do_Tempo.yml'
 
