@@ -1,0 +1,105 @@
+name: Avaliar Quiz A Elegância da Ramificação e a Arte da Fusão
+on:
+  push:
+    paths:
+      - '.github/workflows/quiz_evaluation_Elegância_Ramificação_e_Fusão.yml'
+
+permissions:
+  write-all
+
+jobs:
+  avaliar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueTitulo = "Desafio quiz: Desvendando a Elegância da Ramificação e a Arte da Fusão";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+
+            const issue = issues.data.find(i => i.title === issueTitulo);
+
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
+
+            const respostasCorretas = {
+              "1": "Uma linha de desenvolvimento paralela que emana da principal em um ponto específico.",
+              "2": "Oferecer isolamento lógico para trabalhar em alterações sem afetar outros ramos.",
+              "3": "Merge (Fusão).",
+              "4": "O ponto comum na história dos dois ramos (o ancestral compartilhado) e as alterações subsequentes.",
+              "5": "Alterações realizadas na mesma seção do mesmo arquivo de maneiras diferentes em ramos distintos desde o ancestral comum.",
+              "6": "Flexível e não linear, permitindo colaboração simultânea.",
+              "7": "A aplicação de correções em versões antigas (branches de manutenção) enquanto o desenvolvimento de novas funcionalidades prossegue em outros ramos.",
+              "8": "Um registro de como e quando diferentes linhas de desenvolvimento foram integradas, contribuindo para a rastreabilidade da evolução do projeto."
+            };
+
+            const respostasUsuario = {};
+            const perguntas = issueBody.split("# ");
+
+            perguntas.slice(1).forEach(pergunta => {
+              const matchNumeroPergunta = pergunta.match(/^(\d+) - /);
+              if (matchNumeroPergunta && matchNumeroPergunta[1]) {
+                const numeroPergunta = matchNumeroPergunta[1];
+                const opcoes = pergunta.split("- [");
+
+                opcoes.slice(1).forEach(opcao => {
+                  if (opcao.startsWith("x")) {
+                    respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+                  }
+                });
+              }
+            });
+
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
+            }
+
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                todasCorretas = false;
+              }
+            }
+
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
