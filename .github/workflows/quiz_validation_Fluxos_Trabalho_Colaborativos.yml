@@ -1,0 +1,102 @@
+name: Validar Quiz Dominando Fluxos de Trabalho
+on:
+  push:
+    paths:
+      - '.github/workflows/quiz_validation_Fluxos_Trabalho_Colaborativos.yml'
+
+permissions:
+  write-all
+
+jobs:
+  validar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueTitulo = "Desafio Quiz: Dominando os Fluxos de Trabalho Colaborativos";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+
+            const issue = issues.data.find(i => i.title === issueTitulo);
+
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
+
+            const respostasCorretas = {
+              "1": "Um conjunto de procedimentos acordados por uma equipe para gerenciar a criação, modificação e integração de arquivos.",
+              "2": "Eliminação completa da necessidade de comunicação entre os membros da equipe.",
+              "3": "A comunicação clara sobre quem está editando qual seção do arquivo.",
+              "4": "Uma pessoa designada ou a equipe em conjunto combina as diferentes seções em uma versão mestre.",
+              "5": "Identificar erros, inconsistências e potenciais conflitos antes que as alterações se tornem parte da versão principal.",
+              "6": "Discutir as necessidades do projeto e da equipe para escolher o fluxo mais adequado.",
+              "7": "Garante a organização, a previsibilidade e a eficácia do fluxo a longo prazo.",
+              "8": "As necessidades do projeto e a experiência da equipe podem evoluir com o tempo."
+            };
+
+            const respostasUsuario = {};
+            const perguntas = issueBody.split("# ");
+
+            perguntas.slice(1).forEach(pergunta => {
+              const numeroPergunta = pergunta.split(" - ")[0];
+              const opcoes = pergunta.split("- [");
+
+              opcoes.slice(1).forEach(opcao => {
+                if (opcao.startsWith("x")) {
+                  respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+                }
+              });
+            });
+
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim().replace(/^"(.*)"$/, '$1');
+            }
+
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                todasCorretas = false;
+              }
+            }
+
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
