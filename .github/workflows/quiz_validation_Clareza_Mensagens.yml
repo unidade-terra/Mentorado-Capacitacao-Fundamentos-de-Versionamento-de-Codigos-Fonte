@@ -1,0 +1,102 @@
+name: Validar Quiz Clareza Mensagens de Entrega
+on:
+  push:
+    paths:
+      - '.github/workflows/quiz_validation_Clareza_Mensagens.yml'
+
+permissions:
+  write-all
+
+jobs:
+  validar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueTitulo = "Desafio Quiz: Desvendando a Clareza - O Poder das Mensagens de Entrega";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+
+            const issue = issues.data.find(i => i.title === issueTitulo);
+
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
+
+            const respostasCorretas = {
+              "1": "Facilitar a compreensão das alterações introduzidas, tanto no presente quanto no futuro.",
+              "2": "Um resumo conciso da alteração, idealmente com até 50 caracteres.",
+              "3": "Para criar um histórico coeso e profissional, facilitando a leitura e a compreensão.",
+              "4": "O contexto da alteração, o porquê da mudança e detalhes adicionais relevantes.",
+              "5": "Aumentar a complexidade do processo de integração de código.",
+              "6": "Ao permitir rastrear as alterações específicas que foram feitas em um determinado período ou funcionalidade.",
+              "7": "Mencionar o número da issue (se houver) que está sendo corrigida e descrever a correção implementada.",
+              "8": "Essa abordagem nunca é a ideal; as mensagens devem sempre explicar o \"porquê\" da mudança."
+            };
+
+            const respostasUsuario = {};
+            const perguntas = issueBody.split("# ");
+
+            perguntas.slice(1).forEach(pergunta => {
+              const numeroPergunta = pergunta.split(" - ")[0];
+              const opcoes = pergunta.split("- [");
+
+              opcoes.slice(1).forEach(opcao => {
+                if (opcao.startsWith("x")) {
+                  respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+                }
+              });
+            });
+
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
+            }
+
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                todasCorretas = false;
+              }
+            }
+
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
