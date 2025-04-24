@@ -4,7 +4,7 @@ on:
     paths:
       - '.github/workflows/quiz_validation_Clareza_Mensagens.yml'
 
-permissions:
+permissions: 
   write-all
 
 jobs:
