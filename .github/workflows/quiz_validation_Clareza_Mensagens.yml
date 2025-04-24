@@ -47,7 +47,7 @@ jobs:
             const respostasCorretas = {
               "1": "Facilitar a compreensão da natureza e do motivo da alteração por outros colaboradores (e você mesmo no futuro).",
               "2": "O *porquê* da alteração, o problema que ela resolve ou a necessidade que ela atende.",
-              "3": "fix",
+              "3": "\"fix\"",
               "4": "Elas dificultam a compreensão das alterações ao longo do tempo, tornando o rastreamento e a depuração mais complexos.",
               "5": "O assunto conciso na primeira linha.",
               "6": "Garantindo que todos os membros da equipe compreendam o propósito e o contexto das mudanças realizadas por outros.",
