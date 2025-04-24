@@ -4,7 +4,7 @@ on:
     paths:
       - '.github/workflows/quiz_validation_Clareza_Mensagens.yml'
 
-permissions: 
+permissions:
   write-all
 
 jobs:
@@ -45,14 +45,14 @@ jobs:
             if (!issueBody) return;
 
             const respostasCorretas = {
-              "1": "Facilitar a compreensão das alterações introduzidas, tanto no presente quanto no futuro.",
-              "2": "Um resumo conciso da alteração, idealmente com até 50 caracteres.",
-              "3": "Para criar um histórico coeso e profissional, facilitando a leitura e a compreensão.",
-              "4": "O contexto da alteração, o porquê da mudança e detalhes adicionais relevantes.",
-              "5": "Aumentar a complexidade do processo de integração de código.",
-              "6": "Ao permitir rastrear as alterações específicas que foram feitas em um determinado período ou funcionalidade.",
-              "7": "Mencionar o número da issue (se houver) que está sendo corrigida e descrever a correção implementada.",
-              "8": "Essa abordagem nunca é a ideal; as mensagens devem sempre explicar o \"porquê\" da mudança."
+              "1": "Facilitar a compreensão da natureza e do motivo da alteração por outros colaboradores (e você mesmo no futuro).",
+              "2": "O *porquê* da alteração, o problema que ela resolve ou a necessidade que ela atende.",
+              "3": "fix: Resolver erro de cálculo no carrinho de compras (#42).",
+              "4": "Elas dificultam a compreensão das alterações ao longo do tempo, tornando o rastreamento e a depuração mais complexos.",
+              "5": "O assunto conciso na primeira linha.",
+              "6": "Garantindo que todos os membros da equipe compreendam o propósito e o contexto das mudanças realizadas por outros.",
+              "7": "Facilitam a compreensão do histórico para novas funcionalidades, refatorações e resolução de problemas.",
+              "8": "Ser conciso e direto, resumindo a principal alteração em poucas palavras."
             };
 
             const respostasUsuario = {};
