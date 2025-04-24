@@ -1,7 +1,7 @@
 name: Validar Quiz Desafios Trabalho em Equipe com Multiplas Versoes
 on:
   push:
-    paths:
+    paths: 
       - '.github/workflows/quiz_validation_Desafios_Equipe_Multiplas_Versoes.yml'
 
 permissions:
