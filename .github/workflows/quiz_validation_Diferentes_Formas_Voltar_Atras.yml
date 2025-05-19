@@ -32,28 +32,30 @@ jobs:
       - name: Validar respostas do quiz
         id: validar_respostas
         uses: actions/github-script@v6
-        with: 
+        with:
           script: |
             const issueBody = ${{ steps.obter_issue.outputs.result }};
             if (!issueBody) return;
             const respostasCorretas = {
-              "1": "Porque nem sempre queremos.",
-              "2": "Volta o projeto inteiro para um ponto muito antigo no tempo.",
+              "1": "Porque nem sempre queremos apagar tudo que fizemos, e as abordagens oferecem controle e segurança diferentes.",
+              "2": "Permite descartar alterações que você fez, mas ainda não incluiu em um backup salvo.",
               "3": "Um arquivo específico (ou alguns arquivos) volta para como estava em um backup anterior, sem afetar outras partes do trabalho.",
               "4": "Criar um novo backup que tem o efeito de desfazer as mudanças do backup problemático.",
-              "5": "Para fazer pequenas correções em um arquivo.",
+              "5": "Quando o projeto está muito danificado e você tem certeza que pode perder todo o trabalho feito após o backup antigo para o qual está retornando.",
               "6": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto."
             };
             const respostasUsuario = {};
-            const perguntas = issueBody.split("# ");
+            const perguntas = issueBody.split("### ");
             perguntas.slice(1).forEach(pergunta => {
               const numeroPergunta = pergunta.split(" - ")[0];
-              const opcoes = pergunta.split("- [");
-              opcoes.slice(1).forEach(opcao => {
-                if (opcao.startsWith("x")) {
-                  respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+              const linhas = pergunta.split('\n');
+              for (const linha of linhas) {
+                if (linha.startsWith("- [x]")) {
+                  const textoOpcao = linha.substring(linha.indexOf("] ") + 2).trim();
+                  respostasUsuario[numeroPergunta] = textoOpcao;
+                  break; // Importante: sair do loop de linhas após encontrar a resposta marcada
                 }
-              });
+              }
             });
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
