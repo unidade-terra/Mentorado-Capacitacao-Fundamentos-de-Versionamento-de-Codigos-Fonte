@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/quiz_validation_Desafio_Revertendo_Restaurando_Versoes.yml'
+
 permissions:
   write-all
 
@@ -50,28 +51,41 @@ jobs:
               "4": "Usar a funcionalidade que permite voltar o arquivo ao seu último backup salvo.",
               "5": "Mantém a história do seu trabalho organizada, registrando que a mudança anterior foi desfeita por um novo backup.",
               "6": "Você pode acabar perdendo todo o trabalho que foi feito entre esse backup antigo e o momento atual.",
-              "7": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto." # Resposta correta da Q7
+              "7": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto." // Manter exatamente como no quiz
             };
 
             const respostasUsuario = {};
-            const perguntas = issueBody.split("# ");
+            const perguntas = issueBody.split("### ");
 
             perguntas.slice(1).forEach(pergunta => {
-              const numeroPergunta = pergunta.split(" - ")[0];
-              const opcoes = pergunta.split("- [");
+              const numeroPerguntaMatch = pergunta.match(/^(\d+) - /);
+              if (!numeroPerguntaMatch) return;
 
-              opcoes.slice(1).forEach(opcao => {
-                if (opcao.startsWith("x")) {
-                  respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+              const numeroPergunta = numeroPerguntaMatch[1];
+              const linhasDaPergunta = pergunta.split('\n');
+
+              for (const linha of linhasDaPergunta) {
+                if (linha.includes('- [x]')) {
+                  const matchTexto = linha.match(/^- \[x\]\s*(.*)$/);
+                  if (matchTexto && matchTexto[1] !== undefined) {
+                      respostasUsuario[numeroPergunta] = matchTexto[1].trim();
+                      break;
+                  }
                 }
-              });
+              }
             });
 
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
 
             function sanitizeString(str) {
-              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim().replace(/^"(.*)"$/, '$1');
+              str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Remove acentos
+              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');     // Remove caracteres invisíveis e nbsp
+              str = str.replace(/^"(.*)"$/, '$1');                       // Remove aspas externas se houver
+              // Nova regra: remove um ponto final EXATO e qualquer espaço antes/depois se for o último caractere.
+              // Isso é mais preciso do que remover QUALQUER pontuação, focando no problema do ponto final.
+              str = str.replace(/\.\s*$/, '');
+              return str.trim();                                        // Trim espaços em branco
             }
 
             for (const numeroPergunta in respostasCorretas) {
@@ -81,7 +95,7 @@ jobs:
               if (respostaUsuario === respostaCorreta) {
                 feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   Sua resposta: ${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}\n   Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
                 todasCorretas = false;
               }
             }
