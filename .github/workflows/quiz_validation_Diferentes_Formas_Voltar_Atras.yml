@@ -3,39 +3,32 @@ on:
   push:
     paths:
       - '.github/workflows/quiz_validation_Diferentes_Formas_Voltar_Atras.yml'
-
 permissions:
   write-all
-
 jobs:
   validar_quiz:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
         uses: actions/checkout@v2
-
       - name: Obter conteúdo da issue
         id: obter_issue
         uses: actions/github-script@v6
         with:
           script: |
-            const issueTitulo = "Desafio Quiz: Diferentes Formas de \"Voltar Atrás\": Reversão e Restauração do Seu Trabalho";
+            const issueTitulo = "Desafio Quiz: Diferentes Formas de Voltar Atrás: Reversão e Restauração do Seu Trabalho";
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'all',
             });
-
             const issue = issues.data.find(i => i.title === issueTitulo);
-
             if (!issue) {
               console.log(`Issue "${issueTitulo}" não encontrada.`);
               return;
             }
-
             core.setOutput('issueNumber', issue.number);
             return issue.body;
-
       - name: Validar respostas do quiz
         id: validar_respostas
         uses: actions/github-script@v6
@@ -43,64 +36,45 @@ jobs:
           script: |
             const issueBody = ${{ steps.obter_issue.outputs.result }};
             if (!issueBody) return;
-
             const respostasCorretas = {
               "1": "Porque nem sempre queremos apagar tudo que fizemos, e as abordagens oferecem controle e segurança diferentes.",
               "2": "Permite descartar alterações que você fez, mas ainda não incluiu em um backup salvo.",
               "3": "Um arquivo específico (ou alguns arquivos) volta para como estava em um backup anterior, sem afetar outras partes do trabalho.",
               "4": "Criar um novo backup que tem o efeito de desfazer as mudanças do backup problemático.",
-              "5": "É uma ferramenta vital para a colaboração, a depuração e a compreensão do projeto a longo prazo.",
-              "6": "Para minimizar o tempo de inatividade (downtime) do sistema e proteger a experiência do usuário após problemas em uma nova versão.",
-              "7": "Para garantir que a linha principal de desenvolvimento permaneça intocada e estável ao isolar testes, protótipos ou experimentos."
+              "5": "Quando o projeto está muito danificado e você tem certeza que pode perder todo o trabalho feito após o backup antigo para o qual está retornando.",
+              "6": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto."
             };
-
-
             const respostasUsuario = {};
-            const perguntas = issueBody.split("### "); // Ajustado para capturar melhor o início das perguntas
-
+            const perguntas = issueBody.split("# ");
             perguntas.slice(1).forEach(pergunta => {
-              const numeroPerguntaMatch = pergunta.match(/^(\d+) - /);
-              if (!numeroPerguntaMatch) return; // Garante que a linha começa com o número da pergunta
-
-              const numeroPergunta = numeroPerguntaMatch[1];
+              const numeroPergunta = pergunta.split(" - ")[0];
               const opcoes = pergunta.split("- [");
-
               opcoes.slice(1).forEach(opcao => {
                 if (opcao.startsWith("x")) {
-                  // Captura o texto da opção após "] " e remove quebras de linha/espaços extras no final
                   respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
                 }
               });
             });
-
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
-
             function sanitizeString(str) {
-              // Normaliza para remover acentos e caracteres invisíveis, trim para espaços, e remove aspas externas.
-              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '')
-                        .trim().replace(/^"(.*)"$/, '$1');
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim().replace(/^"(.*)"$/, '$1');
             }
-
             for (const numeroPergunta in respostasCorretas) {
               const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
               const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
-
               if (respostaUsuario === respostaCorreta) {
                 feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   **Sua resposta:** ${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}\n   **Resposta correta:** ${respostasCorretas[numeroPergunta]}\n`;
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
                 todasCorretas = false;
               }
             }
-
             if (todasCorretas) {
               feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
             } else {
               feedback += "\nPor favor, revise suas respostas e tente novamente.";
             }
-
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
