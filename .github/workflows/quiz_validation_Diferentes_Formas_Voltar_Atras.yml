@@ -38,7 +38,7 @@ jobs:
             if (!issueBody) return;
             const respostasCorretas = {
               "1": "Porque nem sempre queremos.",
-              "2": "Permite descartar alterações que você fez, mas ainda não incluiu em um backup salvo.",
+              "2": "Volta o projeto inteiro para um ponto muito antigo no tempo.",
               "3": "Um arquivo específico (ou alguns arquivos) volta para como estava em um backup anterior, sem afetar outras partes do trabalho.",
               "4": "Criar um novo backup que tem o efeito de desfazer as mudanças do backup problemático.",
               "5": "Para fazer pequenas correções em um arquivo.",
