@@ -37,7 +37,7 @@ jobs:
             const issueBody = ${{ steps.obter_issue.outputs.result }};
             if (!issueBody) return;
             const respostasCorretas = {
-              "1": "Porque é mais fácil para o sistema de backups.",
+              "1": "Porque nem sempre queremos.",
               "2": "Permite descartar alterações que você fez, mas ainda não incluiu em um backup salvo.",
               "3": "Um arquivo específico (ou alguns arquivos) volta para como estava em um backup anterior, sem afetar outras partes do trabalho.",
               "4": "Criar um novo backup que tem o efeito de desfazer as mudanças do backup problemático.",
