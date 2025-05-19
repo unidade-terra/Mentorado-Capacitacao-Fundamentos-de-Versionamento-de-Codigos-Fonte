@@ -45,13 +45,13 @@ jobs:
             if (!issueBody) return;
 
             const respostasCorretas = {
-              "1": "Para ter segurança ao corrigir erros, experimentar novas ideias e recuperar versões estáveis.",
-              "2": "Um \"instantâneo\" ou \"foto\" do seu projeto em um determinado momento, guardando o estado do trabalho.",
-              "3": "Selecionar quais arquivos e alterações você quer incluir no próximo backup.",
-              "4": "Usar a funcionalidade que permite voltar o arquivo ao seu último backup salvo.",
-              "5": "Mantém a história do seu trabalho organizada, registrando que a mudança anterior foi desfeita por um novo backup.",
-              "6": "Você pode acabar perdendo todo o trabalho que foi feito entre esse backup antigo e o momento atual.",
-              "7": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto."
+              "1": "Para ter segurança ao corrigir erros, experimentar novas ideias e recuperar versões estáveis",
+              "2": "Um \"instantâneo\" ou \"foto\" do seu projeto em um determinado momento, guardando o estado do trabalho",
+              "3": "Selecionar quais arquivos e alterações você quer incluir no próximo backup",
+              "4": "Usar a funcionalidade que permite voltar o arquivo ao seu último backup salvo",
+              "5": "Mantém a história do seu trabalho organizada, registrando que a mudança anterior foi desfeita por um novo backup",
+              "6": "Você pode acabar perdendo todo o trabalho que foi feito entre esse backup antigo e o momento atual",
+              "7": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto" // Ponto final removido aqui
             };
 
             const respostasUsuario = {};
@@ -75,9 +75,16 @@ jobs:
             let todasCorretas = true;
 
             function sanitizeString(str) {
-              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '')
-                        .trim().replace(/^"(.*)"$/, '$1');
+              // Remove acentos
+              str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+              // Remove caracteres invisíveis e nbsp (espaço não quebrável)
+              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');
+              // Remove pontuação comum no final (.,!?;) para tornar a comparação mais robusta
+              str = str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]+\s*$/, ''); // Remove um ou mais caracteres de pontuação seguidos de espaços no final
+              // Remove aspas externas se houver
+              str = str.replace(/^"(.*)"$/, '$1');
+              // Trim espaços em branco no início e fim
+              return str.trim();
             }
 
             for (const numeroPergunta in respostasCorretas) {
@@ -87,7 +94,7 @@ jobs:
               if (respostaUsuario === respostaCorreta) {
                 feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   **Sua resposta:** ${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}\n   **Resposta correta:** ${respostasCorretas[numeroPergunta]}\n`;
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   Sua resposta: ${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}\n   Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
                 todasCorretas = false;
               }
             }
