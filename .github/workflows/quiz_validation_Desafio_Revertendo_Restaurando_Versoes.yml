@@ -1,5 +1,5 @@
 name: Validar Quiz Desafio Revertendo e Restaurando Versoes
-on: 
+on:
   push:
     paths:
       - '.github/workflows/quiz_validation_Desafio_Revertendo_Restaurando_Versoes.yml'
