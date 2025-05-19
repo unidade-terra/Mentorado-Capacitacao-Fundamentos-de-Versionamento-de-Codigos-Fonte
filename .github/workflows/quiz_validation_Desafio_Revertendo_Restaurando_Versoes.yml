@@ -51,7 +51,7 @@ jobs:
               "4": "Usar a funcionalidade que permite voltar o arquivo ao seu último backup salvo.",
               "5": "Mantém a história do seu trabalho organizada, registrando que a mudança anterior foi desfeita por um novo backup.",
               "6": "Você pode acabar perdendo todo o trabalho que foi feito entre esse backup antigo e o momento atual.",
-              "7": "Para x."
+              "7": "Para que eles saibam que você está trabalhando e não te incomodem."
             };
 
             const respostasUsuario = {};
