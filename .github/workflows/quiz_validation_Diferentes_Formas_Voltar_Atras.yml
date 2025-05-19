@@ -6,7 +6,7 @@ on:
 permissions:
   write-all
 jobs:
-  validar_quiz:
+  validar_quiz: 
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
