@@ -32,16 +32,16 @@ jobs:
       - name: Validar respostas do quiz
         id: validar_respostas
         uses: actions/github-script@v6
-        with:
+        with: 
           script: |
             const issueBody = ${{ steps.obter_issue.outputs.result }};
             if (!issueBody) return;
             const respostasCorretas = {
-              "1": "Porque nem sempre queremos apagar tudo que fizemos, e as abordagens oferecem controle e segurança diferentes.",
+              "1": "Porque é mais fácil para o sistema de backups.",
               "2": "Permite descartar alterações que você fez, mas ainda não incluiu em um backup salvo.",
               "3": "Um arquivo específico (ou alguns arquivos) volta para como estava em um backup anterior, sem afetar outras partes do trabalho.",
               "4": "Criar um novo backup que tem o efeito de desfazer as mudanças do backup problemático.",
-              "5": "Quando o projeto está muito danificado e você tem certeza que pode perder todo o trabalho feito após o backup antigo para o qual está retornando.",
+              "5": "Para fazer pequenas correções em um arquivo.",
               "6": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto."
             };
             const respostasUsuario = {};
