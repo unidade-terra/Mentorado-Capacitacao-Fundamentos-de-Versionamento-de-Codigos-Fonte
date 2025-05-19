@@ -3,7 +3,6 @@ on:
   push:
     paths:
       - '.github/workflows/quiz_validation_Desafio_Revertendo_Restaurando_Versoes.yml'
-
 permissions:
   write-all
 
@@ -51,17 +50,14 @@ jobs:
               "4": "Usar a funcionalidade que permite voltar o arquivo ao seu último backup salvo.",
               "5": "Mantém a história do seu trabalho organizada, registrando que a mudança anterior foi desfeita por um novo backup.",
               "6": "Você pode acabar perdendo todo o trabalho que foi feito entre esse backup antigo e o momento atual.",
-              "7": "Para que eles saibam que você está trabalhando e não te incomodem."
+              "7": "Para evitar confusão e garantir que todos estejam cientes das mudanças no histórico do projeto." # Resposta correta da Q7
             };
 
             const respostasUsuario = {};
-            const perguntas = issueBody.split("### ");
+            const perguntas = issueBody.split("# ");
 
             perguntas.slice(1).forEach(pergunta => {
-              const numeroPerguntaMatch = pergunta.match(/^(\d+) - /);
-              if (!numeroPerguntaMatch) return;
-
-              const numeroPergunta = numeroPerguntaMatch[1];
+              const numeroPergunta = pergunta.split(" - ")[0];
               const opcoes = pergunta.split("- [");
 
               opcoes.slice(1).forEach(opcao => {
@@ -75,9 +71,7 @@ jobs:
             let todasCorretas = true;
 
             function sanitizeString(str) {
-              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '')
-                        .trim().replace(/^"(.*)"$/, '$1');
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim().replace(/^"(.*)"$/, '$1');
             }
 
             for (const numeroPergunta in respostasCorretas) {
@@ -87,7 +81,7 @@ jobs:
               if (respostaUsuario === respostaCorreta) {
                 feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   **Sua resposta:** ${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}\n   **Resposta correta:** ${respostasCorretas[numeroPergunta]}\n`;
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
                 todasCorretas = false;
               }
             }
