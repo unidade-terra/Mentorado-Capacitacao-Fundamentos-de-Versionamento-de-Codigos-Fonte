@@ -1,5 +1,5 @@
 name: Validar Quiz Diferentes Formas de Voltar Atras
-on:
+on: 
   push:
     paths:
       - '.github/workflows/quiz_validation_Diferentes_Formas_Voltar_Atras.yml'
