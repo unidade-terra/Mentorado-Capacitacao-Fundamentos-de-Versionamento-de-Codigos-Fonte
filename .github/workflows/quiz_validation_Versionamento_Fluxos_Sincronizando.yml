@@ -1,5 +1,5 @@
 name: Validar Quiz Versionamento e Fluxos de Trabalho
-on:
+on: 
   push:
     paths:
       - '.github/workflows/quiz_validation_Versionamento_Fluxos_Sincronizando.yml'
