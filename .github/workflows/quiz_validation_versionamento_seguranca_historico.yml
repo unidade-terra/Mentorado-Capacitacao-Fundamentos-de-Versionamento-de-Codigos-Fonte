@@ -2,7 +2,7 @@ name: Validar Quiz Versionamento e Segurança Historico
 on:
   push:
     paths:
-      - '.github/workflows/quiz_validation_versionamento_seguranca_historico.yml' # Nome do arquivo do workflow mais específico
+      - '.github/workflows/quiz_validation_versionamento_seguranca_historico.yml'
 
 permissions:
   write-all
