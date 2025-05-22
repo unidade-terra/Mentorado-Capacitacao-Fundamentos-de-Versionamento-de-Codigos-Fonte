@@ -2,8 +2,7 @@ name: Validar Quiz Mantendo seu Código e seu Histórico Protegidos
 on:
   push:
     paths:
-      # Sugestão de nome de arquivo mais específico para este quiz
-      - '.github/workflows/quiz_validation_mantendo_codigo_protegido.yml' 
+      - '.github/workflows/quiz_validation_mantendo_codigo_protegido.yml'
 
 permissions:
   write-all
@@ -20,7 +19,6 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            # O título da issue deve corresponder EXATAMENTE ao título do seu quiz
             const issueTitulo = "Desafio Quiz: Mantendo seu Código e seu Histórico Protegidos";
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -46,7 +44,6 @@ jobs:
             const issueBody = ${{ steps.obter_issue.outputs.result }};
             if (!issueBody) return;
 
-            # AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ "Mantendo seu Código e seu Histórico Protegidos"
             const respostasCorretas = {
               "1": "Porque oferece mecanismos robustos para definir quem pode acessar e modificar o código, protegendo contra acessos não autorizados.",
               "2": "Garante que o registro de todas as alterações seja completo e confiável, ideal para investigar incidentes de segurança e identificar a origem de mudanças.",
@@ -83,10 +80,10 @@ jobs:
             let todasCorretas = true;
 
             function sanitizeString(str) {
-              str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Remove acentos
-              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');       // Remove caracteres invisíveis e nbsp
-              str = str.replace(/^"(.*)"$/, '$1');                      // Remove aspas externas se houver
-              str = str.replace(/\.\s*$/, ''); // Remove ponto final EXATO e espaços no fim
+              str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');
+              str = str.replace(/^"(.*)"$/, '$1');
+              str = str.replace(/\.\s*$/, '');
               return str.trim();
             }
 
