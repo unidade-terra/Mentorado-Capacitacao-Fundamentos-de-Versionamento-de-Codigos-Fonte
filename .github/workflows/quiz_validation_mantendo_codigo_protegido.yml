@@ -1,13 +1,14 @@
-name: Validar Quiz Versionamento e Segurança Historico
+name: Validar Quiz Mantendo seu Código e seu Histórico Protegidos
 on:
   push:
     paths:
-      - '.github/workflows/quiz_validation_versionamento_seguranca_historico.yml'
+      # Sugestão de nome de arquivo mais específico para este quiz
+      - '.github/workflows/quiz_validation_mantendo_codigo_protegido.yml' 
 
 permissions:
   write-all
 
-jobs: 
+jobs:
   validar_quiz:
     runs-on: ubuntu-latest
     steps:
@@ -19,7 +20,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            // Título da issue deve corresponder EXATAMENTE ao título do seu quiz
+            # O título da issue deve corresponder EXATAMENTE ao título do seu quiz
             const issueTitulo = "Desafio Quiz: Mantendo seu Código e seu Histórico Protegidos";
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -45,7 +46,7 @@ jobs:
             const issueBody = ${{ steps.obter_issue.outputs.result }};
             if (!issueBody) return;
 
-            # AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ "Versionamento e Segurança: Mantenha seu Código e seu Histórico Protegidos"
+            # AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ "Mantendo seu Código e seu Histórico Protegidos"
             const respostasCorretas = {
               "1": "Porque oferece mecanismos robustos para definir quem pode acessar e modificar o código, protegendo contra acessos não autorizados.",
               "2": "Garante que o registro de todas as alterações seja completo e confiável, ideal para investigar incidentes de segurança e identificar a origem de mudanças.",
