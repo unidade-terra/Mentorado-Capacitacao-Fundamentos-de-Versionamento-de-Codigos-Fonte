@@ -1,0 +1,115 @@
+name: Validar Quiz Versionamento e Fluxos de Trabalho
+on:
+  push:
+    paths:
+      - '.github/workflows/quiz_validation_Versionamento_Fluxos_Sincronizando.yml'
+
+permissions:
+  write-all
+
+jobs:
+  validar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Título da issue deve corresponder EXATAMENTE ao título do seu quiz
+            const issueTitulo = "Desafio Quiz: Versionamento e Fluxos de Trabalho: Sincronizando o Desenvolvimento";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+
+            const issue = issues.data.find(i => i.title === issueTitulo);
+
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
+
+            // AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ DE 7 PERGUNTAS
+            const respostasCorretas = {
+              "1": "Registrar e rastrear todas as alterações no código de forma contínua.",
+              "2": "Permite que múltiplos desenvolvedores trabalhem no mesmo código simultaneamente, gerenciando e unindo as alterações.",
+              "3": "Linhas de desenvolvimento isoladas que permitem trabalhar em funcionalidades ou correções sem afetar a linha principal.",
+              "4": "Sinaliza os pontos de sobreposição para que o desenvolvedor possa resolver manualmente.",
+              "5": "Cada nova versão salva no controle de versão inicia automaticamente processos de construção, teste e entrega.",
+              "6": "Atua como um registro completo e imutável de todas as alterações, facilitando investigações e a recuperação de estados anteriores.",
+              "7": "É essencial para recuperar o sistema rapidamente para uma versão estável em caso de problemas após um lançamento, minimizando o tempo de inatividade."
+            };
+
+
+            const respostasUsuario = {};
+            const perguntas = issueBody.split("### ");
+
+            perguntas.slice(1).forEach(pergunta => {
+              const numeroPerguntaMatch = pergunta.match(/^(\d+) - /);
+              if (!numeroPerguntaMatch) return;
+
+              const numeroPergunta = numeroPerguntaMatch[1];
+              const linhasDaPergunta = pergunta.split('\n');
+
+              for (const linha of linhasDaPergunta) {
+                if (linha.includes('- [x]')) {
+                  const matchTexto = linha.match(/^- \[x\]\s*(.*)$/);
+                  if (matchTexto && matchTexto[1] !== undefined) {
+                      respostasUsuario[numeroPergunta] = matchTexto[1].trim();
+                      break;
+                  }
+                }
+              }
+            });
+
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+
+            function sanitizeString(str) {
+              str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Remove acentos
+              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');       // Remove caracteres invisíveis e nbsp
+              str = str.replace(/^"(.*)"$/, '$1');                      // Remove aspas externas se houver
+              str = str.replace(/\.\s*$/, ''); // Remove ponto final EXATO e espaços no fim
+              return str.trim();
+            }
+
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n    Sua resposta: ${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}\n    Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                todasCorretas = false;
+              }
+            }
+
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
