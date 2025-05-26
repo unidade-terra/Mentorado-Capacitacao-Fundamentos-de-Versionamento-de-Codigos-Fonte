@@ -1,0 +1,93 @@
+name: Validar Quiz Importância da Documentação
+
+on:
+  push:
+    paths:
+      # Certifique-se de que este caminho corresponde ao nome do arquivo do seu workflow
+      - '.github/workflows/quiz_validation_documentacao_repositorio.yml' 
+
+permissions:
+  write-all
+
+jobs:
+  validar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // O título da issue do quiz deve corresponder EXATAMENTE ao título do seu quiz na issue
+            const issueTitulo = "Desafio Quiz: A Importância da Documentação no Repositório"; 
+  
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+            const issue = issues.data.find(i => i.title === issueTitulo);
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
+            const respostasCorretas = {
+              "1": "Servir como um ponto de entrada rápido, explicando o que o projeto faz, como instalá-lo e como usá-lo, reduzindo a curva de aprendizado.",
+              "2": "Padroniza o entendimento sobre o projeto, minimiza mal-entendidos e padroniza o fluxo de trabalho para contribuições.",
+              "3": "Detalha componentes e decisões de arquitetura, sendo vital para identificar problemas, implementar novas funcionalidades e permitir que o projeto evolua de forma robusta e escalável.",
+              "4": "O `README.md` serve como um cartão de boas-vindas com informações cruciais de alto nível (instalação, uso), enquanto a documentação interna (ex: `CONTRIBUTING.md`, `docs/`) oferece detalhes técnicos aprofundados.",
+              "5": "É uma linguagem de marcação simples e legível, que permite formatar texto facilmente e é automaticamente renderizada como páginas web estruturadas em plataformas de versionamento.",
+              "6": "Facilita a atualização da documentação junto com as alterações no código, evitando que ela se desvie da realidade do projeto e fique desatualizada.",
+              "7": "Usar linguagem simples e um estilo padronizado para que diferentes públicos (novos desenvolvedores, usuários) possam entender facilmente, minimizando jargões e complexidade."
+            };
+            const respostasUsuario = {};
+            const perguntas = issueBody.split("### ");
+            perguntas.slice(1).forEach(pergunta => {
+              const numeroPergunta = pergunta.split(" - ")[0];
+              const linhas = pergunta.split('\n');
+              for (const linha of linhas) {
+                if (linha.startsWith("- [x]")) {
+                  const textoOpcao = linha.substring(linha.indexOf("] ") + 2).trim();
+                  respostasUsuario[numeroPergunta] = textoOpcao;
+                  break;
+                }
+              }
+            });
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim().replace(/^"(.*)"$/, '$1');
+            }
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                todasCorretas = false;
+              }
+            }
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
