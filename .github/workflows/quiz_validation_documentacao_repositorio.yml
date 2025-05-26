@@ -7,7 +7,7 @@ on:
       - '.github/workflows/quiz_validation_documentacao_repositorio.yml' 
 
 permissions:
-  write-all
+  write-all 
 
 jobs:
   validar_quiz:
