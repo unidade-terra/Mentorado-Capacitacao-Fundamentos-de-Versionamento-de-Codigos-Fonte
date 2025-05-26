@@ -1,8 +1,10 @@
-name: Validar Quiz Versionamento e Fluxos de Trabalho
-on: 
+name: Validar Quiz de Nomenclatura para Repositórios Versionados
+
+on:
   push:
     paths:
-      - '.github/workflows/quiz_validation_Versionamento_Fluxos_Sincronizando.yml'
+      # Certifique-se de que este caminho corresponde ao nome do arquivo do seu workflow
+      - '.github/workflows/quiz_validation_nomenclatura_versionados.yml' 
 
 permissions:
   write-all
@@ -19,8 +21,9 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            // Título da issue deve corresponder EXATAMENTE ao título do seu quiz
-            const issueTitulo = "Desafio Quiz: Versionamento e Fluxos de Trabalho: Sincronizando o Desenvolvimento";
+            // O título da issue do quiz deve corresponder EXATAMENTE ao título do seu quiz na issue
+            const issueTitulo = "Desafio Quiz: Convenções de Nomenclatura para Repositórios Versionados"; 
+            
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -42,37 +45,43 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueBody = ${{ steps.obter_issue.outputs.result }};
-            if (!issueBody) return;
+            const issueBody = `${{ steps.obter_issue.outputs.result }}`;
+            if (!issueBody || issueBody.length < 50) {
+                console.log('Conteúdo da issue vazio ou muito curto para ser um quiz.');
+                return;
+            }
 
-            // AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ DE 7 PERGUNTAS
+            // AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ DE NOMENCLATURA
             const respostasCorretas = {
-              "1": "Registrar e rastrear todas as alterações no código de forma contínua.",
-              "2": "Permite que múltiplos desenvolvedores trabalhem no mesmo código simultaneamente, gerenciando e unindo as alterações.",
-              "3": "Linhas de desenvolvimento isoladas que permitem trabalhar em funcionalidades ou correções sem afetar a linha principal.",
-              "4": "Sinaliza os pontos de sobreposição para que o desenvolvedor possa resolver manualmente.",
-              "5": "Cada nova versão salva no controle de versão inicia automaticamente processos de construção, teste e entrega.",
-              "6": "Atua como um registro completo e imutável de todas as alterações, facilitando investigações e a recuperação de estados anteriores.",
-              "7": "É essencial para recuperar o sistema rapidamente para uma versão estável em caso de problemas após um lançamento, minimizando o tempo de inatividade."
+              "1": "MAJOR.MINOR.PATCH",
+              "2": "Ao fazer alterações incompatíveis na interface pública ou funcionalidade essencial do software.",
+              "3": "Representar correções de bugs compatíveis com versões anteriores.",
+              "4": "Sinaliza que a versão está em desenvolvimento, possui funcionalidades mais completas, mas pode ainda conter bugs.",
+              "5": "É o ramo mais estável do projeto, geralmente representando o código em produção, e é protegido.",
+              "6": "Desenvolver uma nova funcionalidade de gerenciamento de usuários.",
+              "7": "Garante que todos na equipe entendam o propósito de cada ramo e versão rapidamente, facilitando a colaboração e a organização.",
+              "8": "Espaços, acentos, caracteres especiais e letras maiúsculas (exceto em casos específicos de versão)."
             };
 
-
             const respostasUsuario = {};
+            // O quiz usa "### X - " para iniciar cada pergunta
             const perguntas = issueBody.split("### ");
 
             perguntas.slice(1).forEach(pergunta => {
-              const numeroPerguntaMatch = pergunta.match(/^(\d+) - /);
+              // Extrai o número da pergunta (ex: "1")
+              const numeroPerguntaMatch = pergunta.match(/^(\d+)\s*-/);
               if (!numeroPerguntaMatch) return;
+              const numeroPergunta = numeroPerguntaMatch[1].trim();
 
-              const numeroPergunta = numeroPerguntaMatch[1];
               const linhasDaPergunta = pergunta.split('\n');
 
               for (const linha of linhasDaPergunta) {
+                // Procura por "- [x]" e extrai o texto da resposta
                 if (linha.includes('- [x]')) {
                   const matchTexto = linha.match(/^- \[x\]\s*(.*)$/);
                   if (matchTexto && matchTexto[1] !== undefined) {
                       respostasUsuario[numeroPergunta] = matchTexto[1].trim();
-                      break;
+                      break; // Pula para a próxima pergunta após encontrar a resposta marcada
                   }
                 }
               }
@@ -81,11 +90,12 @@ jobs:
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
 
+            // Função para limpar strings, removendo acentos, espaços invisíveis, aspas extras e ponto final no fim
             function sanitizeString(str) {
               str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Remove acentos
-              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');       // Remove caracteres invisíveis e nbsp
+              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');     // Remove caracteres invisíveis e nbsp
               str = str.replace(/^"(.*)"$/, '$1');                      // Remove aspas externas se houver
-              str = str.replace(/\.\s*$/, ''); // Remove ponto final EXATO e espaços no fim
+              str = str.replace(/\.\s*$/, '');                          // Remove ponto final EXATO e espaços no fim
               return str.trim();
             }
 
@@ -96,15 +106,15 @@ jobs:
               if (respostaUsuario === respostaCorreta) {
                 feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n    Sua resposta: ${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}\n    Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   Sua resposta: "${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}"\n   Resposta esperada: "${respostasCorretas[numeroPergunta]}"\n`;
                 todasCorretas = false;
               }
             }
 
             if (todasCorretas) {
-              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz. 🎉";
             } else {
-              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+              feedback += "\nPor favor, revise suas respostas e tente novamente. 🔄";
             }
 
             await github.rest.issues.createComment({
