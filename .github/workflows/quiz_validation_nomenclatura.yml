@@ -1,0 +1,123 @@
+name: Validar Quiz de Nomenclatura
+
+on:
+  push:
+    paths:
+      - '.github/workflows/quiz_validation_nomenclatura.yml' # Ajuste o nome do arquivo para corresponder a este workflow
+
+permissions:
+  write-all
+
+jobs:
+  validar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // O título da issue do quiz deve ser exato.
+            // Para ser mais genérico, você pode querer buscar a última issue com o label 'quiz' ou similar.
+            // Por simplicidade, vou usar um título que você poderia definir para cada quiz.
+            const issueTitulo = "Desafio Quiz: Convenções de Nomenclatura para Repositórios Versionados"; // <-- TÍTULO DA ISSUE DO SEU QUIZ
+
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+
+            const issue = issues.data.find(i => i.title === issueTitulo);
+
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = `${{ steps.obter_issue.outputs.result }}`;
+            if (!issueBody || issueBody.length < 50) { // Adiciona uma verificação básica de tamanho
+                console.log('Conteúdo da issue vazio ou muito curto para ser um quiz.');
+                return;
+            }
+
+            // --- INÍCIO DAS RESPOSTAS CORRETAS ATUALIZADAS ---
+            const respostasCorretas = {
+              "1": "MAJOR.MINOR.PATCH",
+              "2": "Ao fazer alterações incompatíveis na interface pública ou funcionalidade essencial do software.",
+              "3": "Representar correções de bugs compatíveis com versões anteriores.",
+              "4": "Sinaliza que a versão está em desenvolvimento, possui funcionalidades mais completas, mas pode ainda conter bugs.",
+              "5": "É o ramo mais estável do projeto, geralmente representando o código em produção, e é protegido.",
+              "6": "Desenvolver uma nova funcionalidade de gerenciamento de usuários.",
+              "7": "Garante que todos na equipe entendam o propósito de cada ramo e versão rapidamente, facilitando a colaboração e a organização.",
+              "8": "Espaços, acentos, caracteres especiais e letras maiúsculas (exceto em casos específicos de versão)."
+            };
+            // --- FIM DAS RESPOSTAS CORRETAS ATUALIZADAS ---
+
+            const respostasUsuario = {};
+            // Ajuste para lidar com o Markdown do quiz, que usa "### X - " para perguntas
+            const perguntas = issueBody.split("### ");
+
+            perguntas.slice(1).forEach(pergunta => {
+              // Extrai o número da pergunta (ex: "1 - Qual...")
+              const numeroPerguntaMatch = pergunta.match(/^(\d+)\s*-/);
+              if (!numeroPerguntaMatch) return;
+              const numeroPergunta = numeroPerguntaMatch[1].trim();
+
+              const opcoes = pergunta.split("- [");
+
+              opcoes.slice(1).forEach(opcao => {
+                if (opcao.startsWith("x")) {
+                  // A resposta começa após "] "
+                  respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+                }
+              });
+            });
+
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+
+            // Função para limpar strings, removendo acentos, espaços invisíveis e aspas extras
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
+                        .replace(/[\u200B-\u200F\uFEFF]/g, '') // Remove caracteres invisíveis (zero width space, etc)
+                        .replace(/\s+/g, ' ') // Substitui múltiplos espaços por um único
+                        .trim() // Remove espaços no início/fim
+                        .replace(/^"(.*)"$/, '$1'); // Remove aspas externas se houver
+            }
+
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   Sua resposta: "${respostasUsuario[numeroPergunta]}"\n   Resposta esperada: "${respostasCorretas[numeroPergunta]}"\n`;
+                todasCorretas = false;
+              }
+            }
+
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz. 🎉";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente. 🔄";
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
