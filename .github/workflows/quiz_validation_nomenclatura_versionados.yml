@@ -1,57 +1,41 @@
 name: Validar Quiz de Nomenclatura para Repositórios Versionados
-
 on:
   push:
     paths:
-      # Certifique-se de que este caminho corresponde ao nome do arquivo do seu workflow
       - '.github/workflows/quiz_validation_nomenclatura_versionados.yml' 
-
 permissions:
   write-all
-
 jobs:
   validar_quiz:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
         uses: actions/checkout@v2
-
       - name: Obter conteúdo da issue
         id: obter_issue
         uses: actions/github-script@v6
         with:
           script: |
-            // O título da issue do quiz deve corresponder EXATAMENTE ao título do seu quiz na issue
             const issueTitulo = "Desafio Quiz: Convenções de Nomenclatura para Repositórios Versionados"; 
-            
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'all',
             });
-
             const issue = issues.data.find(i => i.title === issueTitulo);
-
             if (!issue) {
               console.log(`Issue "${issueTitulo}" não encontrada.`);
               return;
             }
-
             core.setOutput('issueNumber', issue.number);
             return issue.body;
-
       - name: Validar respostas do quiz
         id: validar_respostas
         uses: actions/github-script@v6
         with:
           script: |
-            const issueBody = `${{ steps.obter_issue.outputs.result }}`;
-            if (!issueBody || issueBody.length < 50) {
-                console.log('Conteúdo da issue vazio ou muito curto para ser um quiz.');
-                return;
-            }
-
-            // AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ DE NOMENCLATURA
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
             const respostasCorretas = {
               "1": "MAJOR.MINOR.PATCH",
               "2": "Ao fazer alterações incompatíveis na interface pública ou funcionalidade essencial do software.",
@@ -62,61 +46,39 @@ jobs:
               "7": "Garante que todos na equipe entendam o propósito de cada ramo e versão rapidamente, facilitando a colaboração e a organização.",
               "8": "Espaços, acentos, caracteres especiais e letras maiúsculas (exceto em casos específicos de versão)."
             };
-
             const respostasUsuario = {};
-            // O quiz usa "### X - " para iniciar cada pergunta
             const perguntas = issueBody.split("### ");
-
             perguntas.slice(1).forEach(pergunta => {
-              // Extrai o número da pergunta (ex: "1")
-              const numeroPerguntaMatch = pergunta.match(/^(\d+)\s*-/);
-              if (!numeroPerguntaMatch) return;
-              const numeroPergunta = numeroPerguntaMatch[1].trim();
-
-              const linhasDaPergunta = pergunta.split('\n');
-
-              for (const linha of linhasDaPergunta) {
-                // Procura por "- [x]" e extrai o texto da resposta
-                if (linha.includes('- [x]')) {
-                  const matchTexto = linha.match(/^- \[x\]\s*(.*)$/);
-                  if (matchTexto && matchTexto[1] !== undefined) {
-                      respostasUsuario[numeroPergunta] = matchTexto[1].trim();
-                      break; // Pula para a próxima pergunta após encontrar a resposta marcada
-                  }
+              const numeroPergunta = pergunta.split(" - ")[0];
+              const linhas = pergunta.split('\n');
+              for (const linha of linhas) {
+                if (linha.startsWith("- [x]")) {
+                  const textoOpcao = linha.substring(linha.indexOf("] ") + 2).trim();
+                  respostasUsuario[numeroPergunta] = textoOpcao;
+                  break;
                 }
               }
             });
-
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
-
-            // Função para limpar strings, removendo acentos, espaços invisíveis, aspas extras e ponto final no fim
             function sanitizeString(str) {
-              str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Remove acentos
-              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');     // Remove caracteres invisíveis e nbsp
-              str = str.replace(/^"(.*)"$/, '$1');                      // Remove aspas externas se houver
-              str = str.replace(/\.\s*$/, '');                          // Remove ponto final EXATO e espaços no fim
-              return str.trim();
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim().replace(/^"(.*)"$/, '$1');
             }
-
             for (const numeroPergunta in respostasCorretas) {
               const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
               const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
-
               if (respostaUsuario === respostaCorreta) {
                 feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   Sua resposta: "${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}"\n   Resposta esperada: "${respostasCorretas[numeroPergunta]}"\n`;
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
                 todasCorretas = false;
               }
             }
-
             if (todasCorretas) {
-              feedback += "\nParabéns! Você acertou todas as perguntas do quiz. 🎉";
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
             } else {
-              feedback += "\nPor favor, revise suas respostas e tente novamente. 🔄";
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
             }
-
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
