@@ -1,7 +1,7 @@
 name: Validar Quiz de Nomenclatura
 
 on:
-  push: 
+  push:  
     paths:
       - '.github/workflows/quiz_validation_nomenclatura.yml' # Ajuste o nome do arquivo para corresponder a este workflow
 
