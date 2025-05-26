@@ -52,9 +52,9 @@ jobs:
                 return;
             }
 
-            // --- INÍCIO DAS RESPOSTAS CORRETAS ATUALIZADAS ---
+            // --- INÍCIO DAS RESPOSTAS CORRETAS ---
             const respostasCorretas = {
-              "1": "MAJOR.MINOR.PATCH", // <--- Linha reescrita com aspas duplas padrão.
+              "1": "MAJOR.MINOR.PATCH",
               "2": "Ao fazer alterações incompatíveis na interface pública ou funcionalidade essencial do software.",
               "3": "Representar correções de bugs compatíveis com versões anteriores.",
               "4": "Sinaliza que a versão está em desenvolvimento, possui funcionalidades mais completas, mas pode ainda conter bugs.",
@@ -63,12 +63,14 @@ jobs:
               "7": "Garante que todos na equipe entendam o propósito de cada ramo e versão rapidamente, facilitando a colaboração e a organização.",
               "8": "Espaços, acentos, caracteres especiais e letras maiúsculas (exceto em casos específicos de versão)."
             };
-            // --- FIM DAS RESPOSTAS CORRETAS ATUALIZADAS ---
+            // --- FIM DAS RESPOSTAS CORRETAS ---
 
             const respostasUsuario = {};
+            // O quiz usa "### X - " para iniciar cada pergunta
             const perguntas = issueBody.split("### ");
 
             perguntas.slice(1).forEach(pergunta => {
+              // Extrai o número da pergunta (ex: "1")
               const numeroPerguntaMatch = pergunta.match(/^(\d+)\s*-/);
               if (!numeroPerguntaMatch) return;
               const numeroPergunta = numeroPerguntaMatch[1].trim();
@@ -76,15 +78,18 @@ jobs:
               const opcoes = pergunta.split("- [");
 
               opcoes.slice(1).forEach(opcao => {
-                if (opcao.startsWith("x")) {
+                // VERIFIQUE ESTA LINHA: O 'x' deve estar entre aspas duplas padrão!
+                if (opcao.startsWith("x")) { 
+                  // A resposta selecionada começa após "] "
                   respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
-                } 
+                }
               });
             });
 
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
 
+            // Função para limpar strings, removendo acentos, espaços invisíveis e aspas extras
             function sanitizeString(str) {
               return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                         .replace(/[\u200B-\u200F\uFEFF]/g, '')
