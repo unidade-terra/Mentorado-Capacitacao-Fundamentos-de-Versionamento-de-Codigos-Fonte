@@ -1,9 +1,10 @@
-name: Validar Quiz de Nomenclatura
+name: Validar Quiz de Nomenclatura para Repositórios Versionados
 
 on:
-  push:  
+  push:
     paths:
-      - '.github/workflows/quiz_validation_nomenclatura.yml' # Ajuste o nome do arquivo para corresponder a este workflow
+      # Certifique-se de que este caminho corresponde ao nome do arquivo do seu workflow
+      - '.github/workflows/quiz_validation_nomenclatura_versionados.yml' 
 
 permissions:
   write-all
@@ -20,11 +21,9 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            // O título da issue do quiz deve ser exato.
-            // Para ser mais genérico, você pode querer buscar a última issue com o label 'quiz' ou similar.
-            // Por simplicidade, vou usar um título que você poderia definir para cada quiz.
-            const issueTitulo = "Desafio Quiz: Convenções de Nomenclatura para Repositórios Versionados"; // <-- TÍTULO DA ISSUE DO SEU QUIZ
-
+            // O título da issue do quiz deve corresponder EXATAMENTE ao título do seu quiz na issue
+            const issueTitulo = "Desafio Quiz: Convenções de Nomenclatura para Repositórios Versionados"; 
+            
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -52,7 +51,7 @@ jobs:
                 return;
             }
 
-            // --- INÍCIO DAS RESPOSTAS CORRETAS ---
+            // AS RESPOSTAS CORRETAS EXATAS PARA O QUIZ DE NOMENCLATURA
             const respostasCorretas = {
               "1": "MAJOR.MINOR.PATCH",
               "2": "Ao fazer alterações incompatíveis na interface pública ou funcionalidade essencial do software.",
@@ -63,7 +62,6 @@ jobs:
               "7": "Garante que todos na equipe entendam o propósito de cada ramo e versão rapidamente, facilitando a colaboração e a organização.",
               "8": "Espaços, acentos, caracteres especiais e letras maiúsculas (exceto em casos específicos de versão)."
             };
-            // --- FIM DAS RESPOSTAS CORRETAS ---
 
             const respostasUsuario = {};
             // O quiz usa "### X - " para iniciar cada pergunta
@@ -75,27 +73,30 @@ jobs:
               if (!numeroPerguntaMatch) return;
               const numeroPergunta = numeroPerguntaMatch[1].trim();
 
-              const opcoes = pergunta.split("- [");
+              const linhasDaPergunta = pergunta.split('\n');
 
-              opcoes.slice(1).forEach(opcao => {
-                // VERIFIQUE ESTA LINHA: O 'x' deve estar entre aspas duplas padrão!
-                if (opcao.startsWith("x")) { 
-                  // A resposta selecionada começa após "] "
-                  respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
+              for (const linha of linhasDaPergunta) {
+                // Procura por "- [x]" e extrai o texto da resposta
+                if (linha.includes('- [x]')) {
+                  const matchTexto = linha.match(/^- \[x\]\s*(.*)$/);
+                  if (matchTexto && matchTexto[1] !== undefined) {
+                      respostasUsuario[numeroPergunta] = matchTexto[1].trim();
+                      break; // Pula para a próxima pergunta após encontrar a resposta marcada
+                  }
                 }
-              });
+              }
             });
 
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
 
-            // Função para limpar strings, removendo acentos, espaços invisíveis e aspas extras
+            // Função para limpar strings, removendo acentos, espaços invisíveis, aspas extras e ponto final no fim
             function sanitizeString(str) {
-              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-                        .replace(/[\u200B-\u200F\uFEFF]/g, '')
-                        .replace(/\s+/g, ' ')
-                        .trim()
-                        .replace(/^"(.*)"$/, '$1');
+              str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Remove acentos
+              str = str.replace(/[\u200B-\u200F\uFEFF\u00A0]/g, '');     // Remove caracteres invisíveis e nbsp
+              str = str.replace(/^"(.*)"$/, '$1');                      // Remove aspas externas se houver
+              str = str.replace(/\.\s*$/, '');                          // Remove ponto final EXATO e espaços no fim
+              return str.trim();
             }
 
             for (const numeroPergunta in respostasCorretas) {
@@ -105,7 +106,7 @@ jobs:
               if (respostaUsuario === respostaCorreta) {
                 feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
               } else {
-                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   Sua resposta: "${respostasUsuario[numeroPergunta]}"\n   Resposta esperada: "${respostasCorretas[numeroPergunta]}"\n`;
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta.\n   Sua resposta: "${respostasUsuario[numeroPergunta] || "Nenhuma resposta selecionada"}"\n   Resposta esperada: "${respostasCorretas[numeroPergunta]}"\n`;
                 todasCorretas = false;
               }
             }
