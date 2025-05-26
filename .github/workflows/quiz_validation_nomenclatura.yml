@@ -47,14 +47,14 @@ jobs:
         with:
           script: |
             const issueBody = `${{ steps.obter_issue.outputs.result }}`;
-            if (!issueBody || issueBody.length < 50) { // Adiciona uma verificação básica de tamanho
+            if (!issueBody || issueBody.length < 50) {
                 console.log('Conteúdo da issue vazio ou muito curto para ser um quiz.');
                 return;
             }
 
             // --- INÍCIO DAS RESPOSTAS CORRETAS ATUALIZADAS ---
             const respostasCorretas = {
-              "1": "MAJOR.MINOR.PATCH",
+              "1": "MAJOR.MINOR.PATCH", // <--- Linha reescrita com aspas duplas padrão.
               "2": "Ao fazer alterações incompatíveis na interface pública ou funcionalidade essencial do software.",
               "3": "Representar correções de bugs compatíveis com versões anteriores.",
               "4": "Sinaliza que a versão está em desenvolvimento, possui funcionalidades mais completas, mas pode ainda conter bugs.",
@@ -66,11 +66,9 @@ jobs:
             // --- FIM DAS RESPOSTAS CORRETAS ATUALIZADAS ---
 
             const respostasUsuario = {};
-            // Ajuste para lidar com o Markdown do quiz, que usa "### X - " para perguntas
             const perguntas = issueBody.split("### ");
 
             perguntas.slice(1).forEach(pergunta => {
-              // Extrai o número da pergunta (ex: "1 - Qual...")
               const numeroPerguntaMatch = pergunta.match(/^(\d+)\s*-/);
               if (!numeroPerguntaMatch) return;
               const numeroPergunta = numeroPerguntaMatch[1].trim();
@@ -79,7 +77,6 @@ jobs:
 
               opcoes.slice(1).forEach(opcao => {
                 if (opcao.startsWith("x")) {
-                  // A resposta começa após "] "
                   respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
                 }
               });
@@ -88,13 +85,12 @@ jobs:
             let feedback = "## Resultado do Quiz\n\n";
             let todasCorretas = true;
 
-            // Função para limpar strings, removendo acentos, espaços invisíveis e aspas extras
             function sanitizeString(str) {
-              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
-                        .replace(/[\u200B-\u200F\uFEFF]/g, '') // Remove caracteres invisíveis (zero width space, etc)
-                        .replace(/\s+/g, ' ') // Substitui múltiplos espaços por um único
-                        .trim() // Remove espaços no início/fim
-                        .replace(/^"(.*)"$/, '$1'); // Remove aspas externas se houver
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[\u200B-\u200F\uFEFF]/g, '')
+                        .replace(/\s+/g, ' ')
+                        .trim()
+                        .replace(/^"(.*)"$/, '$1');
             }
 
             for (const numeroPergunta in respostasCorretas) {
