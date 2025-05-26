@@ -78,7 +78,7 @@ jobs:
               opcoes.slice(1).forEach(opcao => {
                 if (opcao.startsWith("x")) {
                   respostasUsuario[numeroPergunta] = opcao.split("] ")[1].trim();
-                }
+                } 
               });
             });
 
