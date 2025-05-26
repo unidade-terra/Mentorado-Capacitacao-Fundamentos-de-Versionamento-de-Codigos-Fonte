@@ -1,0 +1,94 @@
+name: Validar Quiz Organizacao e Estrutura do Repositorio
+
+on:
+  push:
+    paths:
+      # Certifique-se de que este caminho corresponde ao nome do arquivo do seu workflow
+      - '.github/workflows/quiz_validation_organizacao_estrutura_repositorio.yml' 
+
+permissions:
+  write-all
+
+jobs:
+  validar_quiz:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v2
+
+      - name: Obter conteúdo da issue
+        id: obter_issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // O título da issue do quiz deve corresponder EXATAMENTE ao título do seu quiz na issue
+            const issueTitulo = "Desafio Quiz: Organização e Estrutura do Repositório"; 
+           
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+            });
+            const issue = issues.data.find(i => i.title === issueTitulo);
+            if (!issue) {
+              console.log(`Issue "${issueTitulo}" não encontrada.`);
+              return;
+            }
+            core.setOutput('issueNumber', issue.number);
+            return issue.body;
+      - name: Validar respostas do quiz
+        id: validar_respostas
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issueBody = ${{ steps.obter_issue.outputs.result }};
+            if (!issueBody) return;
+            const respostasCorretas = {
+              "1": "Facilitar a localização de arquivos e reduzir a curva de aprendizado para entender a estrutura.",
+              "2": "Reduz a chance de conflitos e torna a integração do trabalho mais fluida, pois todos sabem onde cada componente deve estar.",
+              "3": "Simplifica a adição de novos módulos, a atualização de bibliotecas e a correção de problemas, permitindo que o projeto cresça de forma controlada.",
+              "4": "Cada pasta representa uma funcionalidade completa, contendo todos os arquivos relacionados a ela.",
+              "5": "Combina o melhor da organização por tipo e por funcionalidade, sendo adequada para projetos de médio a grande porte.",
+              "6": "A padronização de nomes e estruturas reduz a confusão e facilita a localização de arquivos por qualquer membro da equipe.",
+              "7": "Dificultam a localização de arquivos específicos, geram confusão e tornam a navegação no projeto ineficiente.",
+              "8": "Significa manter arquivos de configuração, documentação, recursos estáticos, etc., em locais próprios, para manter o código-fonte limpo e fácil de gerenciar."
+            };
+            const respostasUsuario = {};
+            const perguntas = issueBody.split("### ");
+            perguntas.slice(1).forEach(pergunta => {
+              const numeroPergunta = pergunta.split(" - ")[0];
+              const linhas = pergunta.split('\n');
+              for (const linha of linhas) {
+                if (linha.startsWith("- [x]")) {
+                  const textoOpcao = linha.substring(linha.indexOf("] ") + 2).trim();
+                  respostasUsuario[numeroPergunta] = textoOpcao;
+                  break;
+                }
+              }
+            });
+            let feedback = "## Resultado do Quiz\n\n";
+            let todasCorretas = true;
+            function sanitizeString(str) {
+              return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim().replace(/^"(.*)"$/, '$1');
+            }
+            for (const numeroPergunta in respostasCorretas) {
+              const respostaCorreta = sanitizeString(respostasCorretas[numeroPergunta]);
+              const respostaUsuario = respostasUsuario[numeroPergunta] ? sanitizeString(respostasUsuario[numeroPergunta]) : "";
+              if (respostaUsuario === respostaCorreta) {
+                feedback += `✅ Pergunta ${numeroPergunta}: Resposta correta!\n`;
+              } else {
+                feedback += `❌ Pergunta ${numeroPergunta}: Resposta incorreta. Resposta correta: ${respostasCorretas[numeroPergunta]}\n`;
+                todasCorretas = false;
+              }
+            }
+            if (todasCorretas) {
+              feedback += "\nParabéns! Você acertou todas as perguntas do quiz.";
+            } else {
+              feedback += "\nPor favor, revise suas respostas e tente novamente.";
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.obter_issue.outputs.issueNumber }},
+              body: feedback,
+            });
