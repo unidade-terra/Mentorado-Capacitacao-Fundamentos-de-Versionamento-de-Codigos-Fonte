@@ -10,6 +10,10 @@ on:
         description: 'The project ID'
         required: true
         type: string
+      other_project_data:
+        description: 'The full json payload of the github project event'
+        required: true
+        type: string
       original_card_title:
         description: 'Título original do card do projeto/issue'
         required: true
@@ -34,7 +38,8 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueTitulo = original_card_title;
+            const issueTitulo = github.event.inputs.original_card_title; // <<<<----- AQUI ESTÁ A ÚNICA MUDANÇA
+            console.log(`Buscando issue com o título: "${issueTitulo}"`); // Adicionado para depuração
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
