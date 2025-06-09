@@ -1,8 +1,19 @@
 name: Validar Quiz Mantendo seu Código e seu Histórico Protegidos
 on:
-  push:
-    paths:
-      - '.github/workflows/quiz_validation_mantendo_codigo_protegido.yml'
+  workflow_dispatch:
+    inputs: # Esta seção 'inputs' é necessária se você estiver enviando inputs do seu código Java
+      content_node_id:
+        description: 'The content node ID (Issue ID)'
+        required: true
+        type: string
+      project_id:
+        description: 'The project ID'
+        required: true
+        type: string
+      other_project_data:
+        description: 'The full json payload of the github project event'
+        required: true
+        type: string
 
 permissions:
   write-all
