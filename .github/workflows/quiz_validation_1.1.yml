@@ -14,6 +14,14 @@ on:
         description: 'The full json payload of the github project event'
         required: true
         type: string
+      original_card_title:
+        description: 'Título original do card do projeto/issue'
+        required: true
+        type: string
+      webhook_payload: 
+        description: 'Payload completo do webhook em formato string JSON'
+        required: true
+        type: string
    
 permissions:
   write-all
