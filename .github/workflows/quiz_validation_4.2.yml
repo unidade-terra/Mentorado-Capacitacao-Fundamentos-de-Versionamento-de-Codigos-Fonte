@@ -18,7 +18,7 @@ on:
         description: 'Título original do card do projeto/issue'
         required: true
         type: string
-      webhook_payload: 
+      webhook_payload:
         description: 'Payload completo do webhook em formato string JSON'
         required: true
         type: string
