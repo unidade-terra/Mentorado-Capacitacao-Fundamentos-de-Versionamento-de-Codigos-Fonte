@@ -1,8 +1,19 @@
 name: Validar Quiz A Elegância da Ramificação e a Arte da Fusão
 on:
-  push: 
-    paths:  
-      - '.github/workflows/quiz_validation_Elegância_Ramificação_e_Fusão.yml'
+  workflow_dispatch:
+    inputs: # Esta seção 'inputs' é necessária se você estiver enviando inputs do seu código Java
+      content_node_id:
+        description: 'The content node ID (Issue ID)'
+        required: true
+        type: string
+      project_id:
+        description: 'The project ID'
+        required: true
+        type: string
+      other_project_data:
+        description: 'The full json payload of the github project event'
+        required: true
+        type: string
 
 permissions:
   write-all
