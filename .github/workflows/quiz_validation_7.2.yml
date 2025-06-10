@@ -1,5 +1,4 @@
 name: Validar Quiz Importância da Documentação
-
 on:
   workflow_dispatch:
     inputs: # Esta seção 'inputs' é necessária se você estiver enviando inputs do seu código Java
@@ -11,13 +10,17 @@ on:
         description: 'The project ID'
         required: true
         type: string
-      other_project_data:
-        description: 'The full json payload of the github project event'
+      original_card_title:
+        description: 'Título original do card do projeto/issue'
+        required: true
+        type: string
+      webhook_payload:
+        description: 'Payload completo do webhook em formato string JSON'
         required: true
         type: string
 
 permissions:
-  write-all 
+  write-all
 
 jobs:
   validar_quiz:
@@ -31,21 +34,29 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            // O título da issue do quiz deve corresponder EXATAMENTE ao título do seu quiz na issue
-            const issueTitulo = "Desafio Quiz: A Importância da Documentação no Repositório"; 
-  
+            // O log do payload completo para depuração
+            console.log('context.payload:', JSON.stringify(context.payload, null, 2));
+
+            // A linha corrigida para acessar o issueTitulo
+            const issueTitulo = context.payload.inputs.original_card_title;
+            
+            console.log(`Buscando issue com o título: "${issueTitulo}"`);
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'all',
             });
+
             const issue = issues.data.find(i => i.title === issueTitulo);
+
             if (!issue) {
               console.log(`Issue "${issueTitulo}" não encontrada.`);
               return;
             }
+
             core.setOutput('issueNumber', issue.number);
             return issue.body;
+
       - name: Validar respostas do quiz
         id: validar_respostas
         uses: actions/github-script@v6
