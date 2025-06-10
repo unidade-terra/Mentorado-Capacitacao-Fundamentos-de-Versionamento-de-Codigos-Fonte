@@ -10,8 +10,12 @@ on:
         description: 'The project ID'
         required: true
         type: string
-      other_project_data:
-        description: 'The full json payload of the github project event'
+      original_card_title:
+        description: 'Título original do card do projeto/issue'
+        required: true
+        type: string
+      webhook_payload:
+        description: 'Payload completo do webhook em formato string JSON'
         required: true
         type: string
 
@@ -30,7 +34,13 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueTitulo = "Desafio Quiz: Dominando os Fluxos de Trabalho Colaborativos";
+            // O log do payload completo para depuração
+            console.log('context.payload:', JSON.stringify(context.payload, null, 2));
+
+            // A linha corrigida para acessar o issueTitulo
+            const issueTitulo = context.payload.inputs.original_card_title;
+            
+            console.log(`Buscando issue com o título: "${issueTitulo}"`);
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
