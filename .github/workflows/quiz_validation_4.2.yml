@@ -10,6 +10,10 @@ on:
         description: 'The project ID'
         required: true
         type: string
+      other_project_data:
+        description: 'The full json payload of the github project event'
+        required: true
+        type: string
       original_card_title:
         description: 'Título original do card do projeto/issue'
         required: true
@@ -34,8 +38,26 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const issueTitulo = github.event.inputs.original_card_title; // <<<<----- AQUI ESTÁ A ÚNICA MUDANÇA
-            console.log(`Buscando issue com o título: "${issueTitulo}"`); // Adicionado para depuração
+            // --- INÍCIO DA SEÇÃO DE DEBUG ---
+            console.log('context.payload:', JSON.stringify(context.payload, null, 2)); // LOG CORRIGIDO
+            if (context.payload && context.payload.inputs) {
+              console.log('context.payload.inputs:', JSON.stringify(context.payload.inputs, null, 2)); // LOG CORRIGIDO
+            } else {
+              console.warn('context.payload ou context.payload.inputs é undefined.');
+            }
+            // --- FIM DA SEÇÃO DE DEBUG ---
+
+            let issueTitulo;
+            // Verificação de segurança para evitar TypeError (CORRIGIDO)
+            if (context.payload && context.payload.inputs && typeof context.payload.inputs.original_card_title !== 'undefined') {
+              issueTitulo = context.payload.inputs.original_card_title; // <<<--- ESTA É A LINHA CRÍTICA CORRIGIDA
+            } else {
+              console.error("Erro: Input 'original_card_title' não encontrado ou context.payload.inputs é inválido.");
+              core.setFailed("Falha na execução: Input 'original_card_title' necessário não foi fornecido ou o contexto do evento está malformado.");
+              return; // Encerra a execução do script
+            }
+
+            console.log(`Buscando issue com o título: "${issueTitulo}"`);
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -67,7 +89,7 @@ jobs:
               "4": "Criar cópias de segurança de todas as versões do arquivo antes de qualquer modificação para resolver o conflito.",
               "5": "Criação de um Novo Conteúdo Consensual.",
               "6": "Definir protocolos claros sobre quem está trabalhando em qual parte do arquivo e a frequência das integrações.",
-              "7": "Revisar cuidadosamente a versão final por todos os colaboradores para garantir que a integração foi feita corretamente e nada foi perdido.",
+              7": "Revisar cuidadosamente a versão final por todos os colaboradores para garantir que a integração foi feita corretamente e nada foi perdido.",
               "8": "Ajuda a identificar as alterações específicas feitas por cada colaborador para facilitar a integração."
             };
 
