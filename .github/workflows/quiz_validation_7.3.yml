@@ -1,10 +1,28 @@
 name: Validar Quiz de Nomenclatura para Repositórios Versionados
 
 on:
-  push:
-    paths:
-      - '.github/workflows/quiz_validation_7.3.yml' # Aciona este workflow quando quiz_validation_7.3.yml é modificado
-
+  workflow_dispatch:
+    inputs: # Esta seção 'inputs' é necessária se você estiver enviando inputs do seu código Java
+      content_node_id:
+        description: 'The content node ID (Issue ID)'
+        required: true
+        type: string
+      project_id:
+        description: 'The project ID'
+        required: true
+        type: string
+      original_card_title:
+        description: 'Título original do card do projeto/issue'
+        required: true
+        type: string
+      original_card_title2:
+        description: 'Título original do card do projeto/issue'
+        required: true
+        type: string
+      webhook_payload:
+        description: 'Payload completo do webhook em formato string JSON'
+        required: true
+        type: string
 permissions:
   write-all
 
