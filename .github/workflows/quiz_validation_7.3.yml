@@ -1,5 +1,10 @@
 name: Validar Quiz de Nomenclatura para Repositórios Versionados
 
+on:
+  push:
+    paths:
+      - '.github/workflows/quiz_validation_7.3.yml' # Aciona este workflow quando quiz_validation_7.3.yml é modificado
+
 permissions:
   write-all
 
